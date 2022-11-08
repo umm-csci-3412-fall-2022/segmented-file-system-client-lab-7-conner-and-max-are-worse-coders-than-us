@@ -1,10 +1,14 @@
 package segmentedfilesystem;
 
 public class FileRetriever {
+	String server;
+	int port;
 
 	public FileRetriever(String server, int port) {
         // Save the server and port for use in `downloadFiles()`
         //...
+		this.server = server;
+		this.port = port;
 	}
 
 	public void downloadFiles() {
@@ -20,6 +24,17 @@ public class FileRetriever {
         // PacketManager.allPacketsReceived() that you could
         // call for that, but there are a bunch of possible
         // ways.
+	
+		// connect to server
+		DatagramSocket socker = new DatagramSocket(this.port);
+
+		// receive data 
+		boolean dl = true;
+		while (dl){
+			byte[] buf = new byte[256];
+			DatagramPacket packer = new DatagramPacket(buf, buf.length);
+			socker.receive(packer);
+		}
 	}
 
 }
