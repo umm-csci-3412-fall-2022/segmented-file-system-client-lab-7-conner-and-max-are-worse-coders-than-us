@@ -1,4 +1,6 @@
+package segmentedfilesystem;
 public class DataPacket extends Packet{
+	int fileID;
 	String data; 
 	boolean isLastPacket;	
 	int packetNum;	
@@ -14,3 +16,5 @@ public class DataPacket extends Packet{
 
 	public boolean lastPacket(){return this.isLastPacket;}
 }
+
+
