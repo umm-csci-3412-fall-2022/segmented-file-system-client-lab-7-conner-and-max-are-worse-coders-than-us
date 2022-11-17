@@ -78,6 +78,7 @@ class FileRetriever {
 						dl = false;
 					} 
 				}
+			buildFiles();
 		} catch (Exception ex){
 			System.err.println("You're so dumb you dumb fool you got it wrong " + ex);
 		}
@@ -116,6 +117,56 @@ class FileRetriever {
 			}
 		}
 	}
+
+	public void buildFiles(){
+		for (int i = 0; i < 3; i++){
+			finalPacks.get(i).add(headPacks[i]);
+			int ID = headPacks[i].fileID();
+			for (int ii = 0; ii < datPacks.size(); ii++){
+				if (dataPacks.get(ii).fileID() == ID){
+					finalPacks.get(i).add(datPacks.get(ii));
+				}
+			}
+		}
+		for (int i = 0; i < 3; i++){
+			ArrayList<Packet> currentList = finalPacks.get(i);
+			for(int ii = 0; ii < currentList.size(); ii++) {
+				int key = currentList.get(ii).getPacketNum();
+				int j = ii - 1;
+				while (j >= 0 && currentList.get(j).getPacketNum() > key) {
+					currentList.get(j + 1).getPacketNum() = currentList.get(j).getPacketNum();
+					j -= 1;
+				}
+				currentList.get(j+1).getPacketNum = key;
+			}
+		}
+		for (int i = 0; i < 3; i++){
+			File file = new File(finalPacks.get(i).get(0).getFileName());
+			// Try block to check for exceptions
+        		try {
+				// Initialize a pointer in file
+		            	// using OutputStream
+            			OutputStream os = new FileOutputStream(file);
+ 				byte[] bytes = finalPacks
+			        // Starting writing the bytes in it
+            			os.write(bytes);
+ 
+            			// Display message onconsole for successful
+            			// execution
+            			System.out.println("Successfully byte inserted");
+ 
+		            	// Close the file connections
+            			os.close();
+        		}
+ 
+        		// Catch block to handle the exceptions
+        		catch (Exception e) {
+ 
+            			// Display exception on console
+            			System.out.println("Exception: " + e);
+        		}
+		}
+	}
 }
 
 abstract class Packet{
@@ -125,7 +176,6 @@ abstract class Packet{
          }
  
 }
-
 
 class DataPacket extends Packet{
            int fileID;
@@ -139,7 +189,8 @@ class DataPacket extends Packet{
                   this.fileID = fileID;
                   this.packetNum = pn;
           }
-  
+  		
+	  public int getPacketNum(){return this.packetNum;}
           public String getData(){return this.data;}
   	  public int getFileID(){return this.fileID;}
           public boolean lastPacket(){return this.isLastPacket;}
