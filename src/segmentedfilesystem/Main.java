@@ -78,6 +78,7 @@ class FileRetriever {
 					} 
 				}
 			buildFiles();
+			socker.close();
 		} catch (Exception ex){
 			System.err.println("You're so dumb you dumb fool you got it wrong " + ex);
 		}
