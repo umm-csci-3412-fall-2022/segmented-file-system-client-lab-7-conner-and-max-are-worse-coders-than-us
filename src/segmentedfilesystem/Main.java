@@ -4,6 +4,7 @@ import java.util.*;
 import java.net.*;
 import java.lang.*;
 import java.io.*;
+import java.net.InetAddress;
 
 public class Main {
     
@@ -46,6 +47,7 @@ class FileRetriever {
 		//...
 		this.server = server;
 		this.port = port;
+		//System.out.println("I am doing it... I am doing the thing!");
 	}
 
 	public void downloadFiles() {
@@ -64,14 +66,17 @@ class FileRetriever {
 	
 		// connect to server
 		try {
-			DatagramSocket socker = new DatagramSocket(this.port);
+			DatagramSocket socker = new DatagramSocket();
 			// receive data
 			boolean dl = true;
+			// write incoming bytes to Packet objects
 			while (dl){
 				byte[] buf = new byte[1028];
-				DatagramPacket packer = new DatagramPacket(buf, buf.length);
+				DatagramPacket packer = new DatagramPacket(buf, buf.length, InetAddress.getLocalHost(), this.port);
+				socker.send(packer);
 				socker.receive(packer);
 				createPacket(packer.getData());
+				// checks if all packets have been received, if yes, exit loop and close socket
 				if (lastCount == 3 && headCount == 3)
 					if (packetCounter == totalPackets){
 						dl = false;
@@ -80,21 +85,28 @@ class FileRetriever {
 			buildFiles();
 			socker.close();
 		} catch (Exception ex){
-			System.err.println("You're so dumb you dumb fool you got it wrong " + ex);
+			System.err.println("Exception thrown: " + ex);
 		}
 	}
 
-
+	// byte[] -> void 
+	// builds Packet objects using arrays of bytes delivered to the socket 
 	public void createPacket(byte[] stuff){
+		for (int i = 0; i < stuff.length; i++){
+		//	System.out.println(stuff[i]);
+		}
+		// if header packet:
 		if (stuff[0]%2 == 0){
 			String filename = "";
 			for(int i = 2; i < stuff.length; i++) {
-				if (Byte.toString(stuff[i]).equals("")){
+				if (!Byte.toString(stuff[i]).equals("")){
 					filename += stuff[i];
 				}
 			}
 			HeaderPacket hp = new HeaderPacket(filename, stuff[1]);
+			System.out.println("Filename: " + filename);
 			headPacks[headCount++] = hp;
+		// otherwise create data packet
 		} else {
 			String data = "";
                                 for(int i = 4; i < stuff.length; i++){
@@ -102,9 +114,11 @@ class FileRetriever {
                                 }
 			Byte mostSig = new Byte(stuff[2]);
 			Byte leastSig = new Byte(stuff[3]);
-			int packNum = (256 * mostSig.intValue()) + leastSig.intValue();
+			int packNum = (256 * mostSig.intValue()) + leastSig.intValue(); // calculates packet number using formula provided in lab write up 
+			// checks if it's a terminal packet 
 			if (stuff[0]%4 == 3) {
 				DataPacket dp = new DataPacket(data, true, stuff[1], packNum);
+				System.out.println("Packet number: " + packNum + "\n" + "File ID: " + stuff[1]);
 				dataPacks.add(dp);
 				lastCount++;
 				totalPackets += packNum;
@@ -117,7 +131,9 @@ class FileRetriever {
 			}
 		}
 	}
-
+	
+	// void -> void
+	// re-organizes packets in the correct order, writes their contents to specified output files 
 	public void buildFiles(){
 		// Sorts packets into their respective array lists
 		for (int i = 0; i < 3; i++){
@@ -144,6 +160,7 @@ class FileRetriever {
 		// Writes the contents of each array list out to the specified output files
 		for (int i = 0; i < 3; i++){
 			File file = new File(headPacks[i].getFileName());
+			System.out.println("The file name is: " + headPacks[i].getFileName());
 			// Try block to check for exceptions
         		try {
 				// Initialize a pointer in file
