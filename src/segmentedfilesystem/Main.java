@@ -40,7 +40,7 @@ class FileRetriever {
 	// initialize structs to hold packets 
 	HeaderPacket[] headPacks = new HeaderPacket[3];
 	ArrayList<DataPacket> dataPacks = new ArrayList<DataPacket>();
-	ArrayList<ArrayList<Packet>> finalPacks = new ArrayList<ArrayList<Packet>>();
+	ArrayList<ArrayList<DataPacket>> finalPacks = new ArrayList<ArrayList<DataPacket>>();
 	public FileRetriever(String server, int port) {
 		// Save the server and port for use in `downloadFiles()`
 		//...
@@ -120,7 +120,6 @@ class FileRetriever {
 	public void buildFiles(){
 		// Sorts packets into their respective array lists
 		for (int i = 0; i < 3; i++){
-			finalPacks.get(i).add(headPacks[i]);
 			int ID = headPacks[i].fileID();
 			for (int ii = 0; ii < dataPacks.size(); ii++){
 				if (dataPacks.get(ii).fileID() == ID){
@@ -130,30 +129,30 @@ class FileRetriever {
 		}
 		// Sorts the contents of each array list using insertion sort
 		for (int i = 0; i < 3; i++){
-			ArrayList<Packet> currentList = finalPacks.get(i);
+			ArrayList<DataPacket> currentList = finalPacks.get(i);
 			for(int ii = 0; ii < currentList.size(); ii++) {
-				int key = currentList.get(ii).getPacketNum();
+				DataPacket key = currentList.get(ii);
 				int j = ii - 1;
-				while (j >= 0 && currentList.get(j).getPacketNum() > key) {
-					currentList.get(j + 1).getPacketNum() = currentList.get(j).getPacketNum();
+				while (j >= 0 && currentList.get(j).getPacketNum() > key.getPacketNum()) {
+					currentList.add(j+1, currentList.get(j));
 					j -= 1;
 				}
-				currentList.get(j+1).getPacketNum = key;
+				currentList.add(j+1, key);
 			}
 		}
 		// Writes the contents of each array list out to the specified output files
 		for (int i = 0; i < 3; i++){
-			File file = new File(finalPacks.get(i).get(0).getFileName());
+			File file = new File(headPacks[i].getFileName());
 			// Try block to check for exceptions
         		try {
 				// Initialize a pointer in file
 		            	// using OutputStream
             			OutputStream os = new FileOutputStream(file);
- 				byte[] bytes = finalPacks.get(i);
-			        // Starting writing the bytes in it
-            			os.write(bytes);
- 
-            			// Display message onconsole for successful
+				for (int ii = 0; i < finalPacks.get(i).size(); ii++){
+					byte[] data = finalPacks.get(i).get(ii).getData().getBytes();
+					os.write(data);
+				}
+           			// Display message onconsole for successful
             			// execution
             			System.out.println("Successfully byte inserted");
  
@@ -176,9 +175,6 @@ abstract class Packet{
          public int fileID(){
                  return this.fileID;
          }
-	 public int getPacketNum(){
- 		 
-	}
  
 }
 
