@@ -3,7 +3,7 @@ package segmentedfilesystem;
 import java.util.*;
 import java.net.*;
 import java.lang.*;
-
+import java.io.*;
 
 public class Main {
     
@@ -36,9 +36,11 @@ class FileRetriever {
 	int headCount = 0;
 	int lastCount = 0;
 	int totalPackets = 0;
-	int packetCount = 0;
+	int packetCounter = 0;	
+	// initialize structs to hold packets 
 	HeaderPacket[] headPacks = new HeaderPacket[3];
-
+	ArrayList<DataPacket> dataPacks = new ArrayList<DataPacket>();
+	ArrayList<ArrayList<Packet>> finalPacks = new ArrayList<ArrayList<Packet>>();
 	public FileRetriever(String server, int port) {
 		// Save the server and port for use in `downloadFiles()`
 		//...
@@ -60,9 +62,6 @@ class FileRetriever {
         	// call for that, but there are a bunch of possible
         	// ways.
 	
-		// initialize structs to hold packets 
-		ArrayList<DataPacket> datPacks = new ArrayList<DataPacket>();
-		ArrayList<ArrayList<Packet>> finalPacks = new ArrayList<ArrayList<Packet>>();
 		// connect to server
 		try {
 			DatagramSocket socker = new DatagramSocket(this.port);
@@ -74,7 +73,7 @@ class FileRetriever {
 				socker.receive(packer);
 				createPacket(packer.getData());
 				if (lastCount == 3 && headCount == 3)
-					if (packetCount == totalPackets){
+					if (packetCounter == totalPackets){
 						dl = false;
 					} 
 				}
@@ -105,29 +104,31 @@ class FileRetriever {
 			int packNum = (256 * mostSig.intValue()) + leastSig.intValue();
 			if (stuff[0]%4 == 3) {
 				DataPacket dp = new DataPacket(data, true, stuff[1], packNum);
-				datPacks.add(dp);
+				dataPacks.add(dp);
 				lastCount++;
 				totalPackets += packNum;
 				packetCounter++;
 				
 			} else { 
 				DataPacket dp = new DataPacket(data, false, stuff[1], packNum);
-				datPacks.add(dp);
+				dataPacks.add(dp);
 				packetCounter++;
 			}
 		}
 	}
 
 	public void buildFiles(){
+		// Sorts packets into their respective array lists
 		for (int i = 0; i < 3; i++){
 			finalPacks.get(i).add(headPacks[i]);
 			int ID = headPacks[i].fileID();
-			for (int ii = 0; ii < datPacks.size(); ii++){
+			for (int ii = 0; ii < dataPacks.size(); ii++){
 				if (dataPacks.get(ii).fileID() == ID){
-					finalPacks.get(i).add(datPacks.get(ii));
+					finalPacks.get(i).add(dataPacks.get(ii));
 				}
 			}
 		}
+		// Sorts the contents of each array list using insertion sort
 		for (int i = 0; i < 3; i++){
 			ArrayList<Packet> currentList = finalPacks.get(i);
 			for(int ii = 0; ii < currentList.size(); ii++) {
@@ -140,6 +141,7 @@ class FileRetriever {
 				currentList.get(j+1).getPacketNum = key;
 			}
 		}
+		// Writes the contents of each array list out to the specified output files
 		for (int i = 0; i < 3; i++){
 			File file = new File(finalPacks.get(i).get(0).getFileName());
 			// Try block to check for exceptions
@@ -147,7 +149,7 @@ class FileRetriever {
 				// Initialize a pointer in file
 		            	// using OutputStream
             			OutputStream os = new FileOutputStream(file);
- 				byte[] bytes = finalPacks
+ 				byte[] bytes = finalPacks.get(i);
 			        // Starting writing the bytes in it
             			os.write(bytes);
  
@@ -174,6 +176,9 @@ abstract class Packet{
          public int fileID(){
                  return this.fileID;
          }
+	 public int getPacketNum(){
+ 		 
+	}
  
 }
 
