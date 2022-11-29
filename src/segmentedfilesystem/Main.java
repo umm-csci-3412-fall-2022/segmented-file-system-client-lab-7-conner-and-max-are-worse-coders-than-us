@@ -13,8 +13,6 @@ public class Main {
     // to be the port to use.
     public static void main(String[] args) {
         String server = "localhost";
-        // CHANGE THIS DEFAULT PORT TO THE PORT NUMBER PROVIDED
-        // BY THE INSTRUCTOR.
         int port = 6014;
         
         if (args.length >= 1) {
@@ -34,6 +32,7 @@ public class Main {
 class FileRetriever {
 	String server;
 	int port;
+	// Various counters to keep track of download progress and file size
 	int headCount = 0;
 	int lastCount = 0;
 	int totalPackets = 0;
