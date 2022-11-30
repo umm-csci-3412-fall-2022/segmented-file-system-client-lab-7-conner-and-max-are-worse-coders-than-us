@@ -38,7 +38,7 @@ class FileRetriever {
 	int totalPackets = 0;
 	int packetCounter = 0;	
 	// initialize structs to hold packets 
-	HeaderPacket[] headPacks = new HeaderPacket[2];
+	HeaderPacket[] headPacks = new HeaderPacket[3];
 	ArrayList<DataPacket> dataPacks = new ArrayList<DataPacket>();
 	ArrayList<ArrayList<DataPacket>> finalPacks = new ArrayList<ArrayList<DataPacket>>();
 	public FileRetriever(String server, int port) {
@@ -95,8 +95,9 @@ class FileRetriever {
 		//grab fileID and status
 		int status = Byte.toUnsignedInt(stuff[0]);
 		int fileID = Byte.toUnsignedInt(stuff[1]);
+		System.out.println(status + " " + stuff[0]);
 		// if header packet:
-		if (Byte.toUnsignedInt(stuff[0])% 2 == 0){
+		if (Byte.toUnsignedInt(stuff[0])%2 == 0){
 			byte[] data = Arrays.copyOfRange(stuff, 2, stuff.length);
 			HeaderPacket hp = new HeaderPacket(data, fileID);
 			System.out.println("Filename: " + data);
@@ -108,7 +109,7 @@ class FileRetriever {
 			// checks if it's a terminal packet 
 			if (stuff[0]%4 == 3) {
 				DataPacket dp = new DataPacket(data, true, fileID, packNum);
-				System.out.println("Packet number: " + packNum + " File ID: " + fileID);
+				//System.out.println("Packet number: " + packNum + " File ID: " + fileID);
 				dataPacks.add(dp);
 				lastCount++;
 				totalPackets += packNum;
@@ -116,7 +117,7 @@ class FileRetriever {
 				
 			} else { 
 				DataPacket dp = new DataPacket(data, false, fileID, packNum);
-				System.out.println("Packet number: " + packNum + " File ID: " + fileID);
+				//System.out.println("Packet number: " + packNum + " File ID: " + fileID);
 				dataPacks.add(dp);
 				packetCounter++;
 			}
