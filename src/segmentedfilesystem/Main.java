@@ -38,7 +38,7 @@ class FileRetriever {
 	int totalPackets = 0;
 	int packetCounter = 0;	
 	// initialize structs to hold packets 
-	HeaderPacket[] headPacks = new HeaderPacket[3];
+	HeaderPacket[] headPacks = new HeaderPacket[2];
 	ArrayList<DataPacket> dataPacks = new ArrayList<DataPacket>();
 	ArrayList<ArrayList<DataPacket>> finalPacks = new ArrayList<ArrayList<DataPacket>>();
 	public FileRetriever(String server, int port) {
@@ -74,7 +74,6 @@ class FileRetriever {
 				DatagramPacket packer = new DatagramPacket(buf, buf.length, InetAddress.getLocalHost(), this.port);
 				socker.send(packer);
 				socker.receive(packer);
-				System.out.println(packer.getData());
 				createPacket(packer.getData());
 				// checks if all packets have been received, if yes, exit loop and close socket
 				if (lastCount == 3 && headCount == 3)
@@ -93,7 +92,7 @@ class FileRetriever {
 	// builds Packet objects using arrays of bytes delivered to the socket 
 	public void createPacket(byte[] stuff){
 		// if header packet:
-		if (stuff[0] == 0){
+		if (Byte.toUnsignedInt(stuff[0]) == 0){
 			String filename = "";
 			for(int i = 2; i < stuff.length; i++) {
 				if (!Byte.toString(stuff[i]).equals("")){
@@ -101,7 +100,7 @@ class FileRetriever {
 				}
 			}
 			HeaderPacket hp = new HeaderPacket(filename, stuff[1]);
-		//	System.out.println("Filename: " + filename);
+			System.out.println("Filename: " + filename);
 			headPacks[headCount++] = hp;
 		// otherwise create data packet
 		} else {
@@ -109,15 +108,7 @@ class FileRetriever {
                                 for(int i = 4; i < stuff.length; i++){
                                         data += stuff[i];
                                 }
-			int mostSig = stuff[2];
-			int leastSig = stuff[3];
-			if (mostSig < 0){
-				mostSig += 256;
-			}
-			if (leastSig < 0){
-				leastSig += 256; 
-			}
-			int packNum =256*mostSig + leastSig;
+			int packNum =256*Byte.toUnsignedInt(stuff[2]) + Byte.toUnsignedInt(stuff[3]);
 			// checks if it's a terminal packet 
 			if (stuff[0]%4 == 3) {
 				DataPacket dp = new DataPacket(data, true, stuff[1], packNum);
