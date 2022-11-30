@@ -74,7 +74,8 @@ class FileRetriever {
 				DatagramPacket packer = new DatagramPacket(buf, buf.length, InetAddress.getLocalHost(), this.port);
 				socker.send(packer);
 				socker.receive(packer);
-				createPacket(packer.getData());
+				byte[] data = Arrays.copyOfRange(packer.getData(), packer.getOffset(), packer.getLength());
+				createPacket(data);
 				// checks if all packets have been received, if yes, exit loop and close socket
 				if (lastCount == 3 && headCount == 3)
 					if (packetCounter == totalPackets){
@@ -91,36 +92,31 @@ class FileRetriever {
 	// byte[] -> void 
 	// builds Packet objects using arrays of bytes delivered to the socket 
 	public void createPacket(byte[] stuff){
+		//grab fileID and status
+		int status = Byte.toUnsignedInt(stuff[0]);
+		int fileID = Byte.toUnsignedInt(stuff[1]);
 		// if header packet:
-		if (Byte.toUnsignedInt(stuff[0]) == 0){
-			String filename = "";
-			for(int i = 2; i < stuff.length; i++) {
-				if (!Byte.toString(stuff[i]).equals("")){
-					filename += stuff[i];
-				}
-			}
-			HeaderPacket hp = new HeaderPacket(filename, stuff[1]);
-			System.out.println("Filename: " + filename);
+		if (Byte.toUnsignedInt(stuff[0])% 2 == 0){
+			byte[] data = Arrays.copyOfRange(stuff, 2, stuff.length);
+			HeaderPacket hp = new HeaderPacket(data, fileID);
+			System.out.println("Filename: " + data);
 			headPacks[headCount++] = hp;
 		// otherwise create data packet
 		} else {
-			String data = "";
-                                for(int i = 4; i < stuff.length; i++){
-                                        data += stuff[i];
-                                }
-			int packNum =256*Byte.toUnsignedInt(stuff[2]) + Byte.toUnsignedInt(stuff[3]);
+			int packNum = (Byte.toUnsignedInt(stuff[2]) * 256) + Byte.toUnsignedInt(stuff[3]);
+			byte[] data = Arrays.copyOfRange(stuff, 4, stuff.length);
 			// checks if it's a terminal packet 
 			if (stuff[0]%4 == 3) {
-				DataPacket dp = new DataPacket(data, true, stuff[1], packNum);
-				System.out.println("Packet number: " + packNum + " File ID: " + stuff[1]);
+				DataPacket dp = new DataPacket(data, true, fileID, packNum);
+				System.out.println("Packet number: " + packNum + " File ID: " + fileID);
 				dataPacks.add(dp);
 				lastCount++;
 				totalPackets += packNum;
 				packetCounter++;
 				
 			} else { 
-				DataPacket dp = new DataPacket(data, false, stuff[1], packNum);
-				System.out.println("Packet number: " + packNum + " File ID: " + stuff[1]);
+				DataPacket dp = new DataPacket(data, false, fileID, packNum);
+				System.out.println("Packet number: " + packNum + " File ID: " + fileID);
 				dataPacks.add(dp);
 				packetCounter++;
 			}
@@ -154,15 +150,15 @@ class FileRetriever {
 		}
 		// Writes the contents of each array list out to the specified output files
 		for (int i = 0; i < 3; i++){
-			File file = new File(headPacks[i].getFileName());
-			System.out.println("The file name is: " + headPacks[i].getFileName());
+			File file = new File(new String(headPacks[i].getData()));
+			System.out.println("The file name is: " + headPacks[i].getData());
 			// Try block to check for exceptions
         		try {
 				// Initialize a pointer in file
 		            	// using OutputStream
             			OutputStream os = new FileOutputStream(file);
 				for (int ii = 0; i < finalPacks.get(i).size(); ii++){
-					byte[] data = finalPacks.get(i).get(ii).getData().getBytes();
+					byte[] data = finalPacks.get(i).get(ii).getData();
 					os.write(data);
 				}
            			// Display message onconsole for successful
@@ -184,7 +180,8 @@ class FileRetriever {
 }
 
 abstract class Packet{
-         int fileID; 
+         int fileID;
+	 byte[] data; 
          public int fileID(){
                  return this.fileID;
          }
@@ -193,11 +190,11 @@ abstract class Packet{
 
 class DataPacket extends Packet{
            int fileID;
-           String data;
+           byte[] data;
            boolean isLastPacket;
            int packetNum;
    
-          public DataPacket(String data, boolean ilp, int fileID, int pn){
+          public DataPacket(byte[] data, boolean ilp, int fileID, int pn){
                   this.data = data;
                   this.isLastPacket = ilp;
                   this.fileID = fileID;
@@ -205,22 +202,22 @@ class DataPacket extends Packet{
           }
   		
 	  public int getPacketNum(){return this.packetNum;}
-          public String getData(){return this.data;}
+          public byte[] getData(){return this.data;}
   	  public int getFileID(){return this.fileID;}
           public boolean lastPacket(){return this.isLastPacket;}
 }
 
 class HeaderPacket extends Packet{
-           String fn;
+           byte[] data;
            int fileID;
    
-           public HeaderPacket(String filename, int fileID){
-                   this.fn = filename;
+           public HeaderPacket(byte[] data, int fileID){
+                   this.data = data;
                    this.fileID = fileID;
            }
   
-           public String getFileName(){
-		   return this.fn;
+           public byte[] getData(){
+		   return this.data;
            }	
 }
 
