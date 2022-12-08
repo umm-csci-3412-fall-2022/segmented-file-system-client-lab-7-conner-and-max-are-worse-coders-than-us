@@ -24,7 +24,7 @@ setup(){
       javac segmentedfilesystem/*.java
 
       # Run the client
-      java segmentedfilesystem.Main localhost
+      java -Xmx2048m segmentedfilesystem.Main localhost
 
       cd .. || exit
 

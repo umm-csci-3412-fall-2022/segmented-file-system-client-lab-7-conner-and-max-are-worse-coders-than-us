@@ -69,18 +69,18 @@ class FileRetriever {
 			// receive data
 			boolean dl = true;
 			// write incoming bytes to Packet objects
+			byte[] buf = new byte[1028];
+			byte[] hello = {0};
+			DatagramPacket packer = new DatagramPacket(hello,hello.length, InetAddress.getLocalHost(), this.port);
+			socker.send(packer);
+			packer = new DatagramPacket(buf,buf.length);
 			while (dl){
-				byte[] buf = new byte[1028];
-				DatagramPacket packer = new DatagramPacket(buf, buf.length, InetAddress.getLocalHost(), this.port);
-				socker.send(packer);
 				socker.receive(packer);
-				byte[] data = Arrays.copyOfRange(packer.getData(), packer.getOffset(), packer.getLength());
+				byte[] data = Arrays.copyOfRange(packer.getData(), 0, packer.getLength());
 				createPacket(data);
 				// checks if all packets have been received, if yes, exit loop and close socket
-				if (lastCount == 3 && headCount == 3)
-					if (packetCounter == totalPackets){
-						dl = false;
-					} 
+				if (lastCount == 3 && headCount == 3 && packetCounter == totalPackets)		
+					dl = false;
 				}
 			buildFiles();
 			socker.close();
@@ -95,21 +95,19 @@ class FileRetriever {
 		//grab fileID and status
 		int status = Byte.toUnsignedInt(stuff[0]);
 		int fileID = Byte.toUnsignedInt(stuff[1]);
-		System.out.println(status + " " + stuff[0]);
 		// if header packet:
-		if (Byte.toUnsignedInt(stuff[0])%2 == 0){
+		if (status%2 == 0){
 			byte[] data = Arrays.copyOfRange(stuff, 2, stuff.length);
 			HeaderPacket hp = new HeaderPacket(data, fileID);
 			System.out.println("Filename: " + data);
 			headPacks[headCount++] = hp;
 		// otherwise create data packet
 		} else {
-			int packNum = (Byte.toUnsignedInt(stuff[2]) * 256) + Byte.toUnsignedInt(stuff[3]);
+			int packNum = 256 * Byte.toUnsignedInt(stuff[2]) + Byte.toUnsignedInt(stuff[3]);
 			byte[] data = Arrays.copyOfRange(stuff, 4, stuff.length);
 			// checks if it's a terminal packet 
-			if (stuff[0]%4 == 3) {
+			if (status%4 == 3) {
 				DataPacket dp = new DataPacket(data, true, fileID, packNum);
-				//System.out.println("Packet number: " + packNum + " File ID: " + fileID);
 				dataPacks.add(dp);
 				lastCount++;
 				totalPackets += packNum;
@@ -127,8 +125,13 @@ class FileRetriever {
 	// void -> void
 	// re-organizes packets in the correct order, writes their contents to specified output files 
 	public void buildFiles(){
+		for (int i = 0; i < 3; i++){	
+			finalPacks.add(new ArrayList<DataPacket>());
+		}
 		// Sorts packets into their respective array lists
+		System.out.println("first loop");
 		for (int i = 0; i < 3; i++){
+			
 			int ID = headPacks[i].fileID();
 			for (int ii = 0; ii < dataPacks.size(); ii++){
 				if (dataPacks.get(ii).fileID() == ID){
@@ -137,6 +140,7 @@ class FileRetriever {
 			}
 		}
 		// Sorts the contents of each array list using insertion sort
+		System.out.println("second loop");
 		for (int i = 0; i < 3; i++){
 			ArrayList<DataPacket> currentList = finalPacks.get(i);
 			for(int ii = 0; ii < currentList.size(); ii++) {
