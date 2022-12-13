@@ -1,6 +1,7 @@
 package segmentedfilesystem;
 
 import java.util.*;
+import java.util.Comparator;
 import java.net.*;
 import java.lang.*;
 import java.io.*;
@@ -125,16 +126,17 @@ class FileRetriever {
 	// void -> void
 	// re-organizes packets in the correct order, writes their contents to specified output files 
 	public void buildFiles(){
+		ArrayList<DataPacket> currentList = new ArrayList<DataPacket>();
+		System.out.println("first loop");
 		for (int i = 0; i < 3; i++){	
 			finalPacks.add(new ArrayList<DataPacket>());
 		}
 		// Sorts packets into their respective array lists
-		System.out.println("first loop");
-		for (int i = 0; i < 3; i++){
-			
-			int ID = headPacks[i].fileID();
+		for (int i = 0; i < 3; i++){			
+			int ID = headPacks[i].getFileID();
+			System.out.println("ID: " + ID);
 			for (int ii = 0; ii < dataPacks.size(); ii++){
-				if (dataPacks.get(ii).fileID() == ID){
+				if (dataPacks.get(ii).getFileID() == ID){
 					finalPacks.get(i).add(dataPacks.get(ii));
 				}
 			}
@@ -142,27 +144,21 @@ class FileRetriever {
 		// Sorts the contents of each array list using insertion sort
 		System.out.println("second loop");
 		for (int i = 0; i < 3; i++){
-			ArrayList<DataPacket> currentList = finalPacks.get(i);
-			for(int ii = 0; ii < currentList.size(); ii++) {
-				DataPacket key = currentList.get(ii);
-				int j = ii - 1;
-				while (j >= 0 && currentList.get(j).getPacketNum() > key.getPacketNum()) {
-					currentList.add(j+1, currentList.get(j));
-					j -= 1;
-				}
-				currentList.add(j+1, key);
-			}
+			System.out.println("SIZE: " + finalPacks.get(i).size());
+			currentList = finalPacks.get(i);
+			currentList.sort(new packetComparator());
 		}
 		// Writes the contents of each array list out to the specified output files
+		System.out.println("third loop");
 		for (int i = 0; i < 3; i++){
 			File file = new File(new String(headPacks[i].getData()));
-			System.out.println("The file name is: " + headPacks[i].getData());
+			System.out.println("The file name is: " + headPacks[i].getData().toString());
 			// Try block to check for exceptions
         		try {
 				// Initialize a pointer in file
 		            	// using OutputStream
             			OutputStream os = new FileOutputStream(file);
-				for (int ii = 0; i < finalPacks.get(i).size(); ii++){
+				for (int ii = 0; ii < finalPacks.get(i).size(); ii++){
 					byte[] data = finalPacks.get(i).get(ii).getData();
 					os.write(data);
 				}
@@ -224,5 +220,17 @@ class HeaderPacket extends Packet{
            public byte[] getData(){
 		   return this.data;
            }	
+	   public int getFileID(){
+		return this.fileID;	
+	   }
 }
 
+
+class packetComparator implements Comparator<DataPacket> {
+    public int compare(DataPacket p1, DataPacket p2){
+
+        if(p1.getPacketNum() > p2.getPacketNum()) return 1;
+        if(p1.getPacketNum() < p2.getPacketNum()) return -1;
+        return 0;
+    }
+}
